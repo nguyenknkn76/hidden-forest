@@ -1,0 +1,2 @@
+
+> Read this post here: [Every Backend Developer is a Great AI Developer](https://dev.to/samchon/every-backend-developer-is-a-great-ai-developer-338m)
