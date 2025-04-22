@@ -1,0 +1,56 @@
+# JavaScript Roadmap: 60 Days to Mastery in 2025
+## Week 1: Foundations
+- What is JS?
+- Setup & Console
+- Variables
+- Data Types
+- Operators
+- Conditionals
+- Loops
+## Week 2: Functions, Arrays & Objects
+- Functions
+- Scope & Hoisting
+- Mini Project: Calculator App
+- Arrays
+- Array Methods
+- Objects
+- Mini Project: Product List
+## Week 3: DOM & Interactivity
+- DOM Basics
+- Events
+- DOM Manipulation
+- Forms & Validations
+- Mini Project: To Do List
+## Week 4: Modern JavaScript
+- ES6+ Features
+- Destructuring & Spread
+- JavaScript Classes
+- Prototypes & `this`
+- Mini Project: Notes App
+- Code Refactoring
+## Week 5: APIs & Async
+- Callbacks & Promises
+- Async/Await
+- Fetch API
+- Project: Weather App
+- Project: News App
+## Week 6-8: Real Project & Deployment
+- LocalStorage
+- JSON Deep Dive
+- Project: Expense Tracker
+- Project:
+  - Quote Generator
+  - Clock, Alarm
+  - Bookmark Manager
+- Debugging Mastery
+- Final Projects:
+  - Movie Search with OMDB API
+  - Portfolio Page
+  - Pomodoro Productivity Timer
+- Git & Deployment
+- Wrap Up & What's Next
+
+> Note: This is **advertisement**.
+
+> Read more: https://dev.to/code_2/javascript-roadmap-60-days-to-mastery-in-2025-1enb
+
