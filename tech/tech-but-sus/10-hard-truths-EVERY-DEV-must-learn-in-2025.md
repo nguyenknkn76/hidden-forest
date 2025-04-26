@@ -15,3 +15,5 @@ Learned the hard way
 ## Being a "Yes Dev" doesn't Work.
 ## Comments are Cool, but Clarity is Better.
 ## Your Project Should Add to Your Life, Not Be Your Life.
+
+> Read more: https://dev.to/codewithshahan/10-hard-truths-every-dev-must-learn-in-2025-26io 
