@@ -16,5 +16,5 @@
 | 12  | system design: 25 key concepts                    | https://dev.to/msnmongare/mastering-system-design-the-25-key-concepts-you-must-learn-1plj                     |      |
 | 13  | complexity of web dev (frontend)                  | https://dev.to/professor12/understanding-the-complexity-of-web-development-frontend-56p9                      |      |
 | 14  | set up ci/cd with github action                   | https://dev.to/vishnusatheesh/how-to-set-up-a-cicd-pipeline-with-github-actions-for-automated-deployments-j39 |      |
-|     |                                                   |                                                                                                               |      |
+| 15  | build interactive  web pages without              | https://dev.to/shubhamtiwari909/interactive-elements-without-js-56cc                                          |      |
 |     |                                                   |                                                                                                               |      |
