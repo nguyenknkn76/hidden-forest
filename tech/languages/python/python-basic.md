@@ -90,4 +90,20 @@ print (not False) # prints out true
 ## Exceptions
 ## Funtions, Builtin Function
 ## Lists && Tupes && Sets
-## Dictionaries
+## Dictionarie
+
+### data type
+- numeric: int float complex 
+- sequence: list (str, list(arr), tuple, range)
+- `tupes` = list but immutable → note: can be used in dict 
+- set ~ save: unique value | `fronzenset` ~ immutable
+- dictionary ~ map
+- bytes, bytes array
+- boolean
+- none type
+- byte | memory view
+
+### OOP
+#### class
+multi thread 
+multi processing 
