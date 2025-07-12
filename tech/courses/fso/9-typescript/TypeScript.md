@@ -422,6 +422,12 @@ export default tseslint.config({
   "lint": "eslint ."
 },
 ```
+- install `cors`: `npm i cors`
+- `index.ts`
+```ts
+app.use(cors()); // to fix cors bug
+```
+
 ### Let there be code
 - implement `index.ts`: 
 ```ts 
