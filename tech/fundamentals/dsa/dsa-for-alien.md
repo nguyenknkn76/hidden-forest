@@ -1615,6 +1615,332 @@ Efficient for space and traversal operations.
 - This flexibility in arrangement makes heaps both efficient and versatile for multiple use cases.
 
 # Graph
+A **Graph** is a non-linear data structure consisting of **vertices (nodes)** and **edges** that connect pairs of vertices. Formally, a graph is defined as G(V, E). where `V` is the set of vertices and `E` is the set of edges.
+
+## Intro 
+**Key Components**
+- **Vertex (Node):** Fundamental unit of a graph. Can be labeled or unlabeled.
+- **Edge (Arc):** Connection between two vertices. Can be directed or undirected, weighted or unweighted.
+
+**Graph Types**
+| Type                    | Description                                                               |
+|-------------------------|---------------------------------------------------------------------------|
+| **Null Graph**          | No edges                                                                   |
+| **Trivial Graph**       | Only one vertex                                                            |
+| **Undirected Graph**    | Edges have no direction                                                    |
+| **Directed Graph**      | Edges have a direction (source → destination)                             |
+| **Connected Graph**     | Every node can reach every other node                                     |
+| **Disconnected Graph**  | At least one node is unreachable                                           |
+| **Regular Graph**       | All vertices have the same degree                                          |
+| **Complete Graph**      | Every vertex connects to every other vertex                               |
+| **Cycle Graph**         | Each vertex has degree ≥ 2 and forms a loop                               |
+| **Cyclic Graph**        | Contains at least one cycle                                                |
+| **Directed Acyclic Graph (DAG)** | Directed graph with no cycles                                  |
+| **Bipartite Graph**     | Vertices can be split into 2 sets with no internal edges                  |
+| **Weighted Graph**      | Edges carry weights; may be directed or undirected                        |
+
+### Graph Representations
+**Adjacency Matrix**
+- 2D matrix of size `n x n` (n = number of vertices)
+- Entry `matrix[i][j] = 1` if edge exists between `i` and `j`
+- Works best for dense graphs
+
+**Adjacency List**
+- Array of lists where `list[i]` contains neighbors of vertex `i`
+- Efficient for sparse graphs
+
+**Comparison**
+| Operation         | Adjacency Matrix | Adjacency List |
+|------------------|------------------|----------------|
+| Add Edge         | O(1)             | O(1)           |
+| Remove Edge      | O(1)             | O(n)           |
+| Initialization   | O(n²)            | O(n)           |
+
+### Basic Operations
+- **Add/Delete Vertex**
+- **Add/Delete Edge**
+- **Search for a node**
+- **Graph Traversal** (DFS, BFS)
+
+**Tree vs Graph**
+- A **Tree** is a restricted form of graph:
+  - Acyclic
+  - Hierarchical
+  - Connected
+- All trees are graphs, but not all graphs are trees.
+
+### Real-World Applications
+- **Social Networks:** Users as nodes, relationships as edges
+- **Computer Networks:** Devices as vertices, connections as edges
+- **Transportation Systems:** Cities/locations connected by routes
+- **Neural Networks:** Neurons as vertices, synapses as edges
+- **Compilers:** Data flow analysis, type inference, query optimization
+- **Robot Planning:** States and transitions modeled as graphs
+- **Project Dependencies:** Tasks and prerequisites using topological sort
+- **Network Optimization:** Use MST to minimize connection cost
+
+**Advantages**
+- Models complex relationships beyond linear or hierarchical structures
+- Enables analysis via powerful algorithms: DFS, BFS, Dijkstra, MST, etc.
+- Intuitive for representing relational data across domains
+
+**Disadvantages**
+- Can be difficult to understand for newcomers to graph theory
+- High memory and processing cost for large graphs
+- Algorithms can be tricky and error-prone
+- Visualization challenges for dense or massive graphs
+
+## Graph and its representations
+**1. Adjacency Matrix**
+- Uses a 2D matrix `adjMat[n][n]` for a graph with `n` vertices.
+- **Undirected Graph:**
+  - If edge exists between `i` and `j` → `adjMat[i][j] = adjMat[j][i] = 1`
+- **Directed Graph:**
+  - If edge from `i` to `j` → `adjMat[i][j] = 1`
+
+**2. Adjacency List**
+- Uses an array of lists where adj[i] holds all neighbors of vertex i.
+- Efficient for sparse graphs.
+
+Adjacency Matrix vs. Adjacency List
+
+| Representation     | Advantages                              | Disadvantages                          |
+|--------------------|------------------------------------------|-----------------------------------------|
+| **Adjacency Matrix** | Fast edge lookup (O(1))               | High memory usage in sparse graphs   |
+| **Adjacency List**  | Space-efficient for sparse graphs     | Slower edge lookup, may require traversal |
+
+## Type Of Graph
+### Based on Size
+| Type              | Description                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| **Finite Graph**   | Has a finite number of vertices and edges; commonly used in real-world problems. |
+| **Infinite Graph** | Contains infinite vertices and edges; often theoretical.                    |
+
+### Based on Structure
+
+| Type              | Description                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| **Trivial Graph**  | A graph with one vertex and no edges; also called singleton graph.         |
+| **Simple Graph**   | No loops or multiple edges between vertices.                               |
+| **Multigraph**     | Allows multiple (parallel) edges but not self-loops.                       |
+| **Null Graph**     | Only vertices, no edges; also called edgeless or discrete graph.           |
+| **Pseudo Graph**   | Includes loops and multiple edges.                                         |
+| **Regular Graph**  | Every vertex has the same degree.                                          |
+| **Complete Graph** | Each vertex is connected to every other vertex.                            |
+| **Sparse Graph**   | Few edges compared to vertices.                                            |
+| **Dense Graph**    | Many edges relative to vertex count.                                       |
+| **Labeled Graph**  | Vertices/edges are labeled with names, weights, or dates.                  |
+
+### Based on Directionality and Weight
+| Type              | Description                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| **Directed Graph (Digraph)** | Edges have direction (ordered pairs).                  |
+| **Undirected Graph**         | Edges have no direction; bidirectional connections.     |
+| **Weighted Graph**           | Each edge has a weight (e.g., cost, distance, time).     |
+| **Unweighted Graph**         | All edges are treated equally without weights.           |
+
+### Based on Connectivity & Cycles
+
+| Type              | Description                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| **Connected Graph**   | Path exists between every pair of vertices.                            |
+| **Disconnected Graph**| At least one vertex is unreachable from others.                        |
+| **Cyclic Graph**       | Contains at least one cycle.                                          |
+| **Cycle Graph**        | All vertices connected in a single cycle.                             |
+| **Directed Acyclic Graph (DAG)** | Directed with no cycles; used in dependency modeling.   |
+| **Tree**               | Connected acyclic graph; common for hierarchical data.                |
+
+### Based on Vertex Sets
+| Type              | Description                                                                 |
+|-------------------|-----------------------------------------------------------------------------|
+| **Bipartite Graph**    | Vertices divided into two sets; edges only connect vertices across sets. |
+| **Subgraph**           | A graph formed from a subset of another graph’s vertices and edges.     |
+| **Spanning Subgraph**  | Includes all vertices of the original graph; edges form a subset.       |
+| **Vertex/Edge Disjoint Subgraph** | Subgraphs sharing no common vertices or edges.               |
+
+### Advantages of Graphs
+- Ideal for modeling complex relationships.
+- Useful for visualizing data.
+- Broad applicability: networks, logistics, machine learning, etc.
+- Rich set of algorithms for analysis (DFS, BFS, Dijkstra, MST, etc.)
+
+### Disadvantages of Graphs
+- Large graphs are hard to visualize.
+- Processing and memory usage can be expensive.
+- Interpretation often requires domain expertise.
+- Sensitive to noise or outliers in data
+
+## Aplications
+**Terminologies in Graphs**
+- **Edge**: Connects two vertices.
+- **Adjacent vertices**: Two vertices connected by an edge.
+- **Outgoing edges**: Directed edges from a vertex.
+- **Incoming edges**: Directed edges to a vertex.
+- **Degree**: Total number of edges incident to a vertex.
+- **Source vertex**: In-degree is zero.
+- **Sink vertex**: Out-degree is zero.
+- **Path**: A sequence of alternating vertices and edges.
+- **Cycle**: Path beginning and ending at the same vertex.
+- **Simple path**: Path with no repeated vertices.
+- **Spanning tree**: A spanning subgraph that is a tree.
+- **Connected component**: Most connected subgraph of a disconnected graph.
+- **Bridge**: Edge whose removal increases number of components.
+- **Forest**: A graph with no cycles.
+
+### Graph Representations
+**Set Representation**
+- Composed of two sets:
+  - Vertex Set: `V = {V1, V2, V3, V4}`
+  - Edge Set: `E = {{V1, V2}, {V2, V3}, {V3, V4}, {V4, V1}}`
+- Memory-efficient, but does not support parallel edges.
+**Sequential Representations**
+
+| Representation      | Description                                                                 |
+|---------------------|------------------------------------------------------------------------------|
+| **Adjacency Matrix** | Matrix of size `V × V`; `a[i][j] = 1` if edge exists from Vi to Vj, else `0`. |
+| **Incidence Matrix** | Matrix of size `V × E`; `a[i][j] = 1` if edge Ej is incident on vertex Vi.   |
+| **Path Matrix**      | Reachability matrix; `p[i][j] = 1` if a simple path exists between Vi and Vj.|
+**Linked Representation**
+- Uses **adjacency lists** to link each vertex with its connected vertices.
+- Built using arrays and linked lists; great for representing sparse graphs.
+
+Real-Time Applications of Graphs
+
+| Domain              | Use Case Description                                                         |
+|---------------------|------------------------------------------------------------------------------|
+| **Social Media**     | Identifying trends, sentiment, influencers for marketing and analysis        |
+| **Network Monitoring**| Analyzing traffic, detecting bottlenecks or threats                         |
+| **Financial Trading**| Studying market data for high-frequency decision-making                      |
+| **IoT Management**   | Monitoring large-scale device networks and detecting anomalies               |
+| **Autonomous Vehicles**| Mapping sensor data for real-time navigation                              |
+| **Disease Surveillance**| Tracking outbreaks and containment strategies                           |
+| **Web Applications** | Modeling hyperlinks and crawling logic as directed graphs                    |
+| **Operating Systems**| Using resource allocation graphs to detect deadlocks                         |
+
+### Advantages of Graph Data Structure
+- **Flexible Representation**: Ideal for complex, relational data.
+- **Efficient Algorithms**: Supports BFS, DFS, Dijkstra, MST, and more.
+- **Network Analysis**: Helpful for discovering central nodes and connections.
+- **Shortest Path Calculation**: Crucial for logistics and route optimization.
+- **Intuitive Visualization**: Easily conveys relationships and structure.
+- **Machine Learning Applications**: Used in fraud detection, recommendation systems.
+- **Graph Databases**: Enable structured querying over connected data.
+
+### Disadvantages of Graph Data Structure
+| Issue                    | Description                                                                 |
+|--------------------------|------------------------------------------------------------------------------|
+| **Limited Representation** | Lacks ability to model object properties without extensions               |
+| **Interpretation Difficulty** | Complex graphs may require domain knowledge to analyze                |
+| **Scalability**           | Processing time and memory usage grow with graph size                      |
+| **Data Quality Dependency** | Inaccurate or missing data affects graph integrity                       |
+| **Lack of Standardization** | Variety of graph types can hinder comparisons or best-fit decisions       |
+| **Privacy Concerns**      | May expose sensitive relationships in social or organizational networks     |
+
+## Transpose Graph
+The transpose of a directed graph `G` is a new graph `Gᵗ` with the same vertices as `G`, but with all edge directions 
+
+### Definition
+- For each edge `(u, v)` in `G`, the transpose graph `Gᵗ` will contain edge `(v, u)`.
+- Transpose is also referred to as **reverse** or **converse** of a graph.
+- Useful in algorithms such as **Kosaraju’s** for strongly connected components.
+
+### How It Works (Adjacency List)
+1. Traverse the adjacency list of graph `G`.
+2. For every edge `(u → v)`, add edge `(v → u)` in the transpose graph `Gᵗ`.
+3. The overall time complexity is **O(V + E)**.
+
+### Complexity Analysis
+| Component            | Description                                 | Time Complexity |
+|---------------------|---------------------------------------------|-----------------|
+| `addEdge()`         | Adds one edge to adjacency list              | O(1)            |
+| `displayGraph()`    | Prints adjacency list for all vertices       | O(V + E)        |
+| `transposeGraph()`  | Traverses original graph and builds reverse  | O(V + E)        |
+| **Overall Program** | Combines traversal and display logic         | **O(V + E)**    |
+| **Space Complexity**| Stores two adjacency lists and helper data   | **O(V + E)**    |
+
+## Difference Between Graph and Tree
+### What Is a Graph?
+- A **Graph** is a collection of **nodes (vertices)** and **edges** that connect them.
+- Nodes represent entities such as people, places, or systems.
+- Edges represent relationships or connections between nodes.
+- Can be directed or undirected.
+- Commonly used in modeling **networks**, such as social media, transportation, and communication systems.
+
+### What Is a Tree?
+- A **Tree** is a hierarchical structure where each node has **exactly one parent** (except the root).
+- The topmost node is the **root**.
+- Each node can have multiple child nodes.
+- Trees are acyclic and connected.
+- Widely used for representing **hierarchical data**, such as file systems, XML, and organizational charts.
+
+### Comparison Table
+| Feature            | Graph                                                                 | Tree                                                                |
+|--------------------|------------------------------------------------------------------------|----------------------------------------------------------------------|
+| **Definition**      | Nodes and edges, with arbitrary relationships                         | Hierarchical structure with parent-child relationships              |
+| **Structure**       | May contain cycles and disconnected components                        | Acyclic and always connected                                        |
+| **Root Node**       | No root; nodes may have multiple or no parents                        | Single designated root node with no parent                          |
+| **Node Relationships** | Arbitrary and flexible                                         | Strict parent-child relationship                                   |
+| **Number of Edges** | Varies                                                              | Exactly `n - 1` edges for `n` nodes                                 |
+| **Traversal Complexity** | Can be complex due to cycles and disconnected subgraphs       | Straightforward and typically linear                                |
+| **Common Applications** | Social networks, road maps, computer networks               | File systems, organizational charts, XML/HTML DOM                  |
+| **Examples**        | Facebook graph, Internet topology, airline routes                    | Family trees, folder hierarchy, DOM structure                       |
+
+### Key Differences
+- **Cycles**: Graphs can have cycles; trees cannot.
+- **Connectivity**: Graphs can be disconnected; trees are always connected.
+- **Hierarchy**: Trees have a clear top-down hierarchy (root to leaves); graphs do not.
+- **Applications**:
+  - **Graphs**: Best for modeling connections and networks.
+  - **Trees**: Ideal for organizing hierarchical information.
+
+## Basic Properties of a Graph
+A **graph** is a non-linear data structure consisting of a set of **vertices (nodes)** and **edges** that connect pairs of nodes. Graphs can be directed or undirected, weighted or unweighted, and are widely used to represent complex relationships.
+
+### Core Properties
+
+| Property         | Description                                                                 |
+|------------------|------------------------------------------------------------------------------|
+| **Vertex**        | Fundamental unit in a graph; represents an object or concept                |
+| **Edge**          | Connection between two vertices; may be directed or undirected              |
+| **Weight**        | Value assigned to edges indicating cost, distance, or time                  |
+| **Degree**        | Number of edges incident to a vertex                                        |
+| **In-Degree / Out-Degree** | Number of incoming/outgoing edges for directed graphs         |
+| **Path**          | Sequence of connected vertices via edges                                   |
+| **Cycle**         | A path that starts and ends at the same vertex                             |
+| **Connectedness** | A graph is connected if all vertices are reachable from one another        |
+| **Planarity**     | A graph is planar if it can be drawn without edge crossings                |
+| **Bipartite**     | Vertices can be split into two disjoint sets with no internal connections  |
+
+### Distance & Measurement Metrics
+**Distance Between Two Vertices**
+- **Notation:** `d(A, B)`
+- Represents the number of edges in the **shortest path** between vertex A and vertex B.
+> Example:  
+> Several paths from vertex `b` to `d` exist.  
+> The shortest path `b → c → d` has length `2` → `d(b, d) = 2`.
+
+**Eccentricity of a Vertex**
+- **Notation:** `e(V)`
+- The **maximum distance** from vertex `V` to all other vertices in the graph.
+> Example:  
+> If the distances from vertex `b` to all others are `[1, 1, 2, 3, 2, 2]`, then `e(b) = 3`.
+
+**Radius of a Connected Graph**
+- **Notation:** `r(G)`
+- The **minimum eccentricity** among all vertices in graph `G`.
+> Example:  
+> If eccentricities are `[2, 3, 3, 2, 3]`, then `r(G) = 2`.
+
+**Diameter of a Connected Graph**
+- **Notation:** `d(G)`
+- The **maximum eccentricity** among all vertices in graph `G`.
+> Example:  
+> If eccentricities are `[2, 3, 3, 2, 3]`, then `d(G) = 3`.
+
+**Central Point and Centre of a Graph**
+- A **central point** is a vertex where:  e(V) = r(G)
+- The centre is the set of all such vertices.
+> Example: If e(f) = r(G) = 2, then vertex f is the central point and also the centre of the graph.
 
 # Greedy Algo
 # Dynamic Programming
