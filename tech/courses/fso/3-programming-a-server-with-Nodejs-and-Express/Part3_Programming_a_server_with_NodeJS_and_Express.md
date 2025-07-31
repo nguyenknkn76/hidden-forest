@@ -150,7 +150,7 @@ deploy with render
 production build: `npm run build`
 ## Serving static files from the backend
 ## The whole app to the internet 
-## Straamlining deploying of the frontend
+## Streamlining deploying of the frontend
 ```json
 {
   "scripts": {

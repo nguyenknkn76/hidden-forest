@@ -1770,7 +1770,7 @@ Adjacency Matrix vs. Adjacency List
 - Interpretation often requires domain expertise.
 - Sensitive to noise or outliers in data
 
-## Aplications
+## Applications
 **Terminologies in Graphs**
 - **Edge**: Connects two vertices.
 - **Adjacent vertices**: Two vertices connected by an edge.
@@ -1949,7 +1949,7 @@ A **graph** is a non-linear data structure consisting of a set of **vertices (no
 # Other Algo
 ## Bitwise Algo
 ## Backtracking Algo
-## Devide and Conquer
+## Divide and Conquer
 ## Branch and Bound 
 ## Geometric Algo
 ## Randomized Algo
