@@ -1,0 +1,50 @@
+services:
+  webserver:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless_webserver
+    depends_on:
+      - broker
+      - db
+    ports:
+      - 8001:8000 # Access Paperless via host port 8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    env_file: .env
+    environment:
+      # Database connection string pointing to the DB service
+      PAPERLESS_URL: http://localhost:8001
+      PAPERLESS_DBHOST: db
+      PAPERLESS_DBNAME: ${POSTGRES_DB}
+      PAPERLESS_DBUSER: ${POSTGRES_USER}
+      PAPERLESS_DBPASS: ${POSTGRES_PASSWORD}
+      
+      # Broker connection string pointing to the Redis service
+      PAPERLESS_REDIS: redis://broker:6379
+      
+    volumes:
+      # Map persistent data directories
+      - ./data:/usr/src/paperless/data
+      - ./media:/usr/src/paperless/media
+      - ./consume:/usr/src/paperless/consume # Directory for placing new documents
+    restart: unless-stopped
+
+  # 2. BROKER (Redis) - Required for task queuing
+  broker:
+    image: redis:7-alpine
+    container_name: paperless_broker
+    restart: unless-stopped
+
+  db:
+    image: postgres:15-alpine
+    container_name: paperless_db
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/postgresql/data # Persistent storage for PostgreSQL
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
