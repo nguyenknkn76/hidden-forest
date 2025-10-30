@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lộ trình Chinh phục Kubernetes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <!-- Chosen Palette: Calm Neutrals with Tech Blue -->
+    <!-- 
+    Application Structure Plan: 
+    Cấu trúc SPA này được thiết kế như một "Cổng thông tin học tập tương tác" (Dashboard-style Learning Portal). 
+    Thay vì một luồng tuyến tính, cấu trúc này ưu tiên khả năng truy cập và khám phá. 
+    Kiến trúc được chia thành các khu vực logic:
+    1. Sidebar/Header (Thanh điều hướng): Điều hướng chính, responsive (sidebar trên desktop, menu trên mobile).
+    2. Các "Trang" (Sections): 
+       - Trang chủ: Giới thiệu, sơ đồ kiến trúc (dựng bằng HTML/CSS) và tổng quan.
+       - Cài đặt: Module 0 - Hướng dẫn setup môi trường.
+       - Khái niệm: Nhóm các module 1-6 (Pod, Deploy, Service, Config, Storage) vào các tab lồng nhau để dễ tra cứu.
+       - Thực hành (Trọng tâm): Module 7 - Chuyển đổi Docker Compose sang K8s. Đây là phần quan trọng nhất, được thiết kế với các tab so sánh trực quan.
+       - Nâng cao: Nhóm các module 8-12 (Helm, HPA, CI/CD, EKS) để khám phá thêm.
+       - So sánh: Tập hợp tất cả các bảng so sánh (Pod/Deploy, Service/Ingress...) vào một nơi để tham khảo nhanh.
+    Lý do chọn cấu trúc này: Người dùng (một dev) có thể muốn nhảy thẳng đến phần "Thực hành" (Module 7) hoặc tra cứu nhanh một "Khái niệm" (Module 4) mà không cần cuộn qua toàn bộ tài liệu. Cấu trúc này hỗ trợ cả việc học tuyến tính và tra cứu ngẫu nhiên, tối ưu hóa trải nghiệm người dùng.
+    -->
+    <!-- 
+    Visualization & Content Choices: 
+    - Sơ đồ Kiến trúc (Mermaid gốc):
+      - Goal: Hiểu luồng giao tiếp của K8s.
+      - Viz/Method: Dựng lại bằng HTML/CSS/Tailwind (flexbox/grid). Sử dụng các `div` có border, mũi tên (`&rarr;`) để biểu thị các thành phần (Control Plane, Nodes) và luồng dữ liệu.
+      - Interaction: Hover vào các thànhK8s.
+      - Justification: Tuân thủ yêu cầu KHÔNG SVG/Mermaid, biến sơ đồ tĩnh thành một yếu tố UI tương tác.
+    - Bảng so sánh (Pod/Deploy, Service/Ingress...):
+      - Goal: Phân biệt các khái niệm tương đồng.
+      - Viz/Method: Bảng HTML (`<table>`) được tạo kiểu bằng Tailwind. Nhóm vào một tab "So sánh" riêng.
+      - Justification: Cách trình bày rõ ràng, dễ tham khảo nhất.
+    - Khối code (YAML/Bash):
+      - Goal: Cung cấp code mẫu để thực hành.
+      - Viz/Method: Thẻ `<pre><code>` được tạo kiểu.
+      - Interaction: Nút "Sao chép" (Copy to Clipboard) cho mỗi khối code, sử dụng vanilla JS (`document.execCommand('copy')`).
+      - Justification: Tăng tính thực tiễn, cho phép người dùng sử dụng ngay code mẫu.
+    - Thực hành: Docker Compose vs K8s (Module 7):
+      - Goal: Trực quan hóa bài toán chuyển đổi cốt lõi.
+      - Viz/Method: Giao diện 2 tab chính ("Docker Compose" và "Kubernetes"). Tab Kubernetes chứa một accordion hoặc các tab con cho 7 file YAML.
+      - Interaction: Nhấp qua lại giữa các tab để so sánh. Nút "Sao chép" code.
+      - Justification: Cấu trúc này làm nổi bật giải pháp cho vấn đề chính của người dùng.
+    - Autoscaling HPA (Module 9):
+      - Goal: Trực quan hóa khái niệm HPA.
+      - Viz/Method: Biểu đồ đường/cột kết hợp (Chart.js) trên canvas, đặt trong `div.chart-container` được style đúng yêu cầu (responsive, max-width, h-96).
+      - Interaction: Nút "Mô phỏng" (Simulate Load) sẽ cập nhật dữ liệu (CPU tăng, sau đó Pod tăng) và gọi `chart.update()`.
+      - Justification: Biến một khái niệm trừu tượng (scaling) thành một hình ảnh trực quan, sinh động.
+    - CI/CD Workflow (Module 10):
+      - Goal: Hiển thị quy trình từng bước.
+      - Viz/Method: Sơ đồ dòng chảy ngang (horizontal stepper) bằng HTML/CSS/Tailwind (flexbox, `div` tròn cho các bước, `div` nối).
+      - Justification: Trực quan hơn nhiều so với một danh sách gạch đầu dòng, tuân thủ KHÔNG SVG.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        pre {
+            background-color: #f3f4f6;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-x: auto;
+            position: relative;
+        }
+        code {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: #d1d5db;
+            color: #1f2937;
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background-color: #9ca3af;
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+        .analogy-box {
+            background-color: #fefce8;
+            border: 1px solid #fde68a;
+            border-left-width: 4px;
+            border-left-color: #facc15;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            margin: 1.5rem 0;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 24rem; 
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 24rem;
+            }
+        }
+        .nav-link {
+            display: block;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .nav-link:hover {
+            background-color: #e5e7eb;
+            color: #111827;
+        }
+        .nav-link.active {
+            background-color: #2563eb;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .page-content {
+            display: none;
+        }
+        .page-content.active {
+            display: block;
+        }
+        .tab-btn {
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        .tab-btn.active {
+            background-color: #eff6ff;
+            color: #2563eb;
+            border-color: #93c5fd;
+        }
+        .tab-btn:not(.active):hover {
+            background-color: #f3f4f6;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Mobile Header -->
+        <header class="md:hidden bg-white shadow-md p-4 flex justify-between items-center sticky top-0 z-20">
+            <h1 class="text-xl font-bold text-blue-600">Lộ trình K8s</h1>
+            <button id="mobile-menu-btn" class="p-2 rounded-md text-gray-700 hover:bg-gray-100">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+            </button>
+        </header>
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="bg-white w-full md:w-64 flex-shrink-0 shadow-lg md:sticky md:top-0 md:self-start md:h-screen overflow-y-auto z-10 hidden md:block">
+            <div class="p-4">
+                <h1 class="text-2xl font-bold text-blue-600 hidden md:block">Lộ trình K8s</h1>
+                <nav class="mt-6 space-y-2" id="main-nav">
+                    <a class="nav-link active" data-page="home">
+                        <span class="mr-2">🏠</span> Trang chủ
+                    </a>
+                    <a class="nav-link" data-page="setup">
+                        <span class="mr-2">🔧</span> Cài đặt (Fedora)
+                    </a>
+                    <a class="nav-link" data-page="concepts">
+                        <span class="mr-2">🧠</span> Khái niệm Cốt lõi
+                    </a>
+                    <a class="nav-link" data-page="comparisons">
+                        <span class="mr-2">🔄</span> So sánh nhanh
+                    </a>
+                    <a class="nav-link" data-page="practice">
+                        <span class="mr-2">🚀</span> Thực hành: Chuyển đổi
+                    </a>
+                    <a class="nav-link" data-page="advanced">
+                        <span class="mr-2">📈</span> Nâng cao
+                    </a>
+                </nav>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-4 md:p-8 lg:p-12 overflow-y-auto">
+            
+            <!-- SECTION: Trang chủ -->
+            <section id="page-home" class="page-content active space-y-8">
+                <header class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-4xl font-bold text-gray-900">Chào mừng đến với Lộ trình Chinh phục Kubernetes!</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        Bạn là một lập trình viên backend và mới làm quen với DevOps. Đây là một lộ trình tương tác được thiết kế để đưa bạn từ những khái niệm cơ bản về K8s đến việc triển khai một hệ thống microservice hoàn chỉnh.
+                        Hãy sử dụng thanh điều hướng bên trái để khám phá các module, từ cài đặt môi trường đến các khái niệm cốt lõi và bài thực hành chuyển đổi từ Docker Compose.
+                    </p>
+                </header>
+
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-2xl font-semibold mb-4">Sơ đồ Kiến trúc Kubernetes (Tương tác)</h3>
+                    <p class="mb-6 text-gray-600">Đây là bức tranh toàn cảnh về cách các thành phần trong Kubernetes giao tiếp với nhau. Di chuột qua các thành phần để xem mô tả ngắn.</p>
+                    
+                    <!-- HTML/CSS Architecture Diagram -->
+                    <div class="border-2 border-gray-200 rounded-lg p-4 bg-gray-50 overflow-x-auto">
+                        <div class="flex flex-col md:flex-row md:items-start md:space-x-4 min-w-max">
+                            
+                            <!-- User -->
+                            <div class="flex-shrink-0 p-4 border border-gray-300 rounded-lg bg-white shadow text-center group relative" title="kubectl: Công cụ dòng lệnh (CLI) để bạn ra lệnh cho cluster.">
+                                <span class="text-4xl">🧑‍💻</span>
+                                <div class="font-semibold mt-2">Client (kubectl)</div>
+                            </div>
+
+                            <div class="text-center text-3xl text-gray-400 mx-4 self-center hidden md:block">&rarr;</div>
+                            <div class="text-center text-3xl text-gray-400 my-4 self-center md:hidden">&darr;</div>
+
+                            <!-- Control Plane -->
+                            <div class="flex-shrink-0 p-4 border-2 border-blue-500 rounded-lg bg-blue-50 shadow-md">
+                                <h4 class="text-xl font-bold text-center text-blue-700 mb-4">Control Plane (Bộ não)</h4>
+                                <div class="space-y-4">
+                                    <div class="p-3 border border-gray-300 rounded-lg bg-white group relative" title="API Server: Lễ tân, cửa ngõ duy nhất để mọi giao tiếp đi vào.">
+                                        <span class="font-semibold">API Server</span>
+                                        <span class="absolute -top-2 -right-2 text-3xl text-gray-400">&darr;</span>
+                                    </div>
+                                    <div class="flex space-x-4">
+                                        <div class="flex-1 p-3 border border-gray-300 rounded-lg bg-white group relative" title="etcd: CSDL lưu trữ trạng thái 'mong muốn' của cluster.">
+                                            <span class="font-semibold">etcd</span>
+                                        </div>
+                                        <div class="flex-1 p-3 border border-gray-300 rounded-lg bg-white group relative" title="Scheduler: Quyết định Pod nên chạy ở Node nào.">
+                                            <span class="font-semibold">Scheduler</span>
+                                        </div>
+                                        <div class="flex-1 p-3 border border-gray-300 rounded-lg bg-white group relative" title="Controller Manager: Đảm bảo trạng thái 'hiện tại' khớp với 'mong muốn'.">
+                                            <span class="font-semibold">Controller Mgr</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="text-center text-3xl text-gray-400 mx-4 self-center hidden md:block">&rarr;</div>
+                            <div class="text-center text-3xl text-gray-400 my-4 self-center md:hidden">&darr;</div>
+
+                            <!-- Worker Nodes -->
+                            <div class="flex-grow p-4 border-2 border-green-500 rounded-lg bg-green-50 shadow-md space-y-4">
+                                <h4 class="text-xl font-bold text-center text-green-700 mb-4">Worker Nodes (Tay chân)</h4>
+                                
+                                <div class="p-4 border border-gray-300 rounded-lg bg-white">
+                                    <h5 class="font-semibold mb-2">Node 1</h5>
+                                    <div class="flex space-x-2">
+                                        <div class="p-2 rounded bg-gray-100 group relative" title="Kubelet: Quản lý của Node, nhận lệnh từ API Server.">Kubelet</div>
+                                        <div class="p-2 rounded bg-gray-100 group relative" title="Kube-Proxy: Quản lý mạng (service) trong Node.">Kube-Proxy</div>
+                                        <div class="p-2 rounded bg-green-200 text-green-800 font-medium">Pod A</div>
+                                        <div class="p-2 rounded bg-green-200 text-green-800 font-medium">Pod B</div>
+                                    </div>
+                                </div>
+
+                                <div class="p-4 border border-gray-300 rounded-lg bg-white">
+                                    <h5 class="font-semibold mb-2">Node 2</h5>
+                                    <div class="flex space-x-2">
+                                        <div class="p-2 rounded bg-gray-100">Kubelet</div>
+                                        <div class="p-2 rounded bg-gray-100">Kube-Proxy</div>
+                                        <div class="p-2 rounded bg-green-200 text-green-800 font-medium">Pod C</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analogy-box">
+                    <p class="font-semibold text-lg mb-2">💡 So sánh nhanh: Docker Compose vs Kubernetes</p>
+                    <p class="text-gray-700">
+                        <strong>Docker Compose (Quản lý nhà trọ):</strong> Bạn có 1 file excel (`docker-compose.yaml`) ghi rõ phòng nào cần gì. Bạn phải tự mình setup. Nếu phòng cháy, nó sập luôn và bạn phải tự đi sửa.
+                        <br>
+                        <strong>Kubernetes (Chuỗi khách sạn 5 sao):</strong> Bạn là CEO, chỉ ra lệnh: "Tôi muốn *luôn luôn có* 3 phòng 'backend' sẵn sàng". Hệ thống (K8s) sẽ tự tìm khách sạn (Node) trống, setup phòng (Pod), treo biển chỉ dẫn (Service), và quan trọng nhất: nếu phòng (Pod) cháy, hệ thống *tự động* xây lại phòng y hệt ở chỗ khác.
+                    </p>
+                </div>
+            </section>
+
+            <!-- SECTION: Cài đặt (Fedora) -->
+            <section id="page-setup" class="page-content space-y-8">
+                <header class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-4xl font-bold text-gray-900">🔧 Cài đặt Môi trường (Fedora 42)</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        Trước khi bắt đầu, chúng ta cần một "sân chơi". Các hướng dẫn này được tối ưu cho Fedora 42.
+                    </p>
+                </header>
+
+                <div class="bg-white p-6 rounded-lg shadow space-y-4">
+                    <h3 class="text-2xl font-semibold">1. Cài đặt Docker</h3>
+                    <p>Docker là nền tảng. K8s điều phối containers, nên bạn cần Docker để build và chạy chúng.</p>
+                    <pre><code class="language-bash"># Thêm repo Docker CE
+sudo dnf -y install dnf-plugins-core
+sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+
+# Cài đặt Docker
+sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+# Khởi động và cho phép Docker chạy cùng hệ thống
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Thêm user của bạn vào group 'docker' để không cần 'sudo'
+sudo usermod -aG docker $USER
+</code></pre>
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md">
+                        <strong>Quan trọng:</strong> Bạn cần Log out và Log in lại để áp dụng thay đổi group.
+                    </div>
+
+                    <h3 class="text-2xl font-semibold mt-6">2. Cài đặt `kubectl`</h3>
+                    <p>Đây là "cây đũa thần" của bạn, công cụ CLI để giao tiếp với K8s API server.</p>
+                    <pre><code class="language-bash"># Thêm repo Kubernetes
+cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.30/rpm/repodata/repomd.xml.key
+EOF
+
+# Cài đặt kubectl
+sudo dnf install -y kubectl
+</code></pre>
+
+                    <h3 class="text-2xl font-semibold mt-6">3. Cài đặt Local Cluster (Chọn 1)</h3>
+                    
+                    <h4 class="text-xl font-medium">Lựa chọn A: Minikube (Khuyên dùng)</h4>
+                    <p>Minikube giả lập một cluster K8s (thường là 1 node) bên trong máy ảo hoặc container. Rất tốt để học.</p>
+                    <pre><code class="language-bash"># Cài đặt Minikube (tải binary)
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+
+# Khởi động cluster Minikube (dùng driver docker)
+minikube start --driver=docker
+</code></pre>
+
+                    <h4 class="text-xl font-medium mt-4">Lựa chọn B: Kind (Kubernetes in Docker)</h4>
+                    <p>Kind chạy mỗi *node* K8s như một container. Tốt cho việc thử nghiệm multi-node.</p>
+                    <pre><code class="language-bash"># Cài đặt Kind (tải binary)
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+
+# Tạo cluster
+kind create cluster --name dev-cluster
+</code></pre>
+                </div>
+            </section>
+
+            <!-- SECTION: Khái niệm Cốt lõi -->
+            <section id="page-concepts" class="page-content space-y-8">
+                <header class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-4xl font-bold text-gray-900">🧠 Khái niệm Cốt lõi</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        Đây là những "building blocks" của Kubernetes. Hiểu rõ chúng là chìa khóa để làm chủ K8s. Hãy chọn một chủ đề bên dưới để khám phá.
+                    </p>
+                </header>
+
+                <!-- Tabs Navigation -->
+                <div class="bg-white rounded-lg shadow p-2 flex flex-wrap gap-2" id="concepts-tabs">
+                    <button class="tab-btn active" data-tab="concepts-main">Chạy Ứng dụng</button>
+                    <button class="tab-btn" data-tab="concepts-config">Cấu hình & Bí mật</button>
+                    <button class="tab-btn" data-tab="concepts-storage">Lưu trữ Dữ liệu</button>
+                </div>
+
+                <!-- Tab Content: Chạy Ứng dụng -->
+                <div id="concepts-main" class="tab-content active space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Pod, ReplicaSet, và Deployment</h3>
+                        <p class="mt-2 text-gray-600">Đây là bộ ba cốt lõi để chạy ứng dụng stateless của bạn.</p>
+                        <div class="analogy-box">
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>Pod (Bóng đèn):</strong> Đơn vị chạy nhỏ nhất, bọc quanh container. Nếu bóng đèn (Pod) cháy, nó sẽ tắt ngóm.</li>
+                                <li><strong>ReplicaSet (Công tắc đảm bảo):</strong> Bạn nói: "Tôi muốn 3 bóng đèn luôn sáng". Nếu 1 bóng cháy, ReplicaSet sẽ tự động lắp bóng mới.</li>
+                                <li><strong>Deployment (Hệ thống nhà thông minh):</strong> Bạn nói: "Hãy đổi 3 bóng đèn v1 sang v2". Deployment sẽ quản lý ReplicaSet, từ từ tắt bóng v1 và bật bóng v2 (Rolling Update).</li>
+                            </ul>
+                        </div>
+                        <p class="mt-4 font-semibold">→ Bạn sẽ luôn làm việc với `Deployment`.</p>
+                        
+                        <h4 class="text-xl font-medium mt-6">Ví dụ: Deployment cho Nginx</h4>
+                        <p class="mb-2">File `my-backend-dep.yaml` này yêu cầu K8s chạy 3 bản sao (replicas) của image `nginx`.</p>
+                        <pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-backend-api
+spec:
+  replicas: 3 # Chúng ta muốn 3 Pod
+  selector:
+    matchLabels:
+      app: my-backend # Deployment này quản lý Pod nào có label này
+  template: # Đây là "khuôn mẫu" (template) của Pod
+    metadata:
+      labels:
+        app: my-backend # Pod này được gán label 'my-backend'
+    spec:
+      containers:
+      - name: backend-container
+        image: nginx:1.25
+        ports:
+        - containerPort: 80
+</code></pre>
+                        <pre class="mt-4"><code class="language-bash"># Áp dụng file
+kubectl apply -f my-backend-dep.yaml
+
+# Xem 3 Pods đang chạy
+kubectl get pods
+
+# Thử "giết" 1 Pod (K8s sẽ tự tạo lại ngay)
+kubectl delete pod <tên-một-pod-vừa-tạo>
+</code></pre>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Service và Ingress</h3>
+                        <p class="mt-2 text-gray-600">Bạn đã có Pod, nhưng làm sao để giao tiếp với chúng?</p>
+                        <div class="analogy-box">
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>Service (Tổng đài nội bộ):</strong> Cung cấp 1 IP *ổn định* (ClusterIP) bên trong cluster. Khi `frontend` gọi "backend-service", tổng đài (Kube-Proxy) sẽ kết nối nó đến 1 trong 3 Pod `backend` đang rảnh. (Layer 4 - TCP/UDP).</li>
+                                <li><strong>Ingress (Bảo vệ cổng chính):</strong> Là bộ quy tắc cho traffic từ *bên ngoài* (Internet) đi vào. Nó xem xét tên miền, đường dẫn (`/api`) để quyết định "đường này đi tới Service A", "đường kia đi tới Service B". (Layer 7 - HTTP/HTTPS).</li>
+                            </ul>
+                        </div>
+
+                        <h4 class="text-xl font-medium mt-6">Ví dụ: Expose Deployment bằng Service (NodePort)</h4>
+                        <p class="mb-2">File `my-backend-svc.yaml` này tạo 1 Service để truy cập các Pod có label `app: my-backend`.</p>
+                        <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-backend-service
+spec:
+  type: NodePort # Dùng NodePort để test trên Minikube
+  selector:
+    app: my-backend # Phải khớp với 'labels' của Pod
+  ports:
+  - protocol: TCP
+    port: 80 # Port của Service
+    targetPort: 80 # Port trên Pod
+</code></pre>
+                        <pre class="mt-4"><code class="language-bash"># Áp dụng file
+kubectl apply -f my-backend-svc.yaml
+
+# Lấy URL để test (chỉ dành cho Minikube)
+minikube service my-backend-service
+</code></pre>
+
+                        <h4 class="text-xl font-medium mt-6">Ví dụ: Định tuyến bằng Ingress</h4>
+                        <p class="mb-2">File `my-ingress.yaml` này định nghĩa quy tắc: `/api` đi đến `backend-service`, `/` đi đến `frontend-service`.</p>
+                        <pre><code class="language-bash"># (Chỉ làm 1 lần) Bật Ingress Controller trên Minikube
+minikube addons enable ingress
+</code></pre>
+                        <pre class="mt-4"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: my-backend-service # Chuyển đến Service backend
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-frontend-service # Chuyển đến Service frontend
+            port:
+              number: 80
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Cấu hình -->
+                <div id="concepts-config" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">ConfigMap và Secret</h3>
+                        <p class="mt-2 text-gray-600">Cách để tách cấu hình (config) ra khỏi code (image).</p>
+                        <div class="analogy-box">
+                            <ul class="list-disc list-inside space-y-2">
+                                <li><strong>ConfigMap (Bảng tin công cộng):</strong> Lưu trữ cấu hình *không nhạy cảm* dạng key-value (ví dụ: `LOG_LEVEL=debug`).</li>
+                                <li><strong>Secret (Két sắt):</strong> Lưu trữ thông tin *nhạy cảm* (ví dụ: `DB_PASSWORD=123`). Dữ liệu được encode base64 (chỉ để che mắt, không phải mã hóa).</li>
+                            </ul>
+                        </div>
+
+                        <h4 class="text-xl font-medium mt-6">Ví dụ: Inject ENV vào Deployment</h4>
+                        <p class="mb-2">1. Tạo ConfigMap và Secret bằng CLI:</p>
+                        <pre><code class="language-bash"># Tạo ConfigMap (lưu DB host và user)
+kubectl create configmap my-backend-config \
+  --from-literal=DB_HOST=postgres-service \
+  --from-literal=DB_USER=admin
+
+# Tạo Secret (lưu password)
+kubectl create secret generic my-backend-secret \
+  --from-literal=DB_PASSWORD=admin123
+</code></pre>
+                        <p class="mt-4 mb-2">2. Cập nhật `my-backend-dep.yaml` để sử dụng chúng:</p>
+                        <pre><code class="language-yaml">... (apiVersion, kind, metadata, spec, replicas, selector, template, metadata) ...
+        spec:
+          containers:
+          - name: backend-container
+            image: my-company/my-backend:v1.2
+            ports:
+            - containerPort: 8080
+            env: # === PHẦN QUAN TRỌNG ===
+              # Lấy giá trị từ ConfigMap
+              - name: DATABASE_HOST
+                valueFrom:
+                  configMapKeyRef:
+                    name: my-backend-config # Tên ConfigMap
+                    key: DB_HOST # Key bên trong
+              # Lấy giá trị từ Secret
+              - name: DATABASE_PASSWORD
+                valueFrom:
+                  secretKeyRef:
+                    name: my-backend-secret # Tên Secret
+                    key: DB_PASSWORD # Key bên trong
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Lưu trữ -->
+                <div id="concepts-storage" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Volume, PersistentVolume (PV) và PVC</h3>
+                        <p class="mt-2 text-gray-600">Làm thế nào để lưu trữ dữ liệu cho Database (ứng dụng stateful)?</p>
+                        <div class="analogy-box">
+                            <p class="font-semibold mb-2">Quy trình Yêu cầu Kho:</p>
+                            <ol class="list-decimal list-inside space-y-2">
+                                <li><strong>Admin (PV - Kho):</strong> Chuẩn bị sẵn các ổ cứng (PersistentVolume) và cất vào kho.</li>
+                                <li><strong>Dev (PVC - Phiếu yêu cầu):</strong> Gửi một phiếu (PersistentVolumeClaim) nói: "Tôi cần 1GB ổ cứng".</li>
+                                <li><strong>K8s (Hệ thống):</strong> Tìm trong kho 1 PV phù hợp và *gắn* (bind) nó với PVC.</li>
+                                <li><strong>Dev (Pod):</strong> Tạo Pod (ví dụ: Postgres) và nói: "Hãy dùng ổ cứng được gán cho phiếu PVC này".</li>
+                            </ol>
+                            <p class="mt-2">→ Nếu Pod chết và khởi động lại ở Node khác, nó sẽ tự động được gắn lại đúng ổ cứng đó (vì ổ cứng gắn với PVC, không phải Pod). Dữ liệu an toàn!</p>
+                        </div>
+
+                        <h4 class="text-xl font-medium mt-6">Ví dụ: Chạy Postgres với Data bền vững</h4>
+                        <p class="mb-2">1. Tạo `postgres-pvc.yaml` (Phiếu yêu cầu):</p>
+                        <pre><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce # Chỉ 1 Pod được đọc/ghi (chuẩn cho DB)
+  resources:
+    requests:
+      storage: 1Gi # Tôi cần 1GB
+</code></pre>
+                        <p class="mt-4 mb-2">2. Tạo `postgres-dep.yaml` (Dùng phiếu yêu cầu):</p>
+                        <pre><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+spec:
+  replicas: 1
+  ... (selector, template) ...
+        spec:
+          containers:
+          - name: postgres
+            image: postgres:15
+            env: 
+              - name: POSTGRES_PASSWORD
+                value: "admin123" # (Nên dùng Secret ở đây!)
+            volumeMounts: # === PHẦN 1 ===
+              - name: postgres-storage # Tên (nội bộ)
+                mountPath: /var/lib/postgresql/data # Mount vào thư mục data
+          volumes: # === PHẦN 2 ===
+            - name: postgres-storage # Tên này phải khớp 'volumeMounts.name'
+              persistentVolumeClaim:
+                claimName: postgres-db-pvc # Trỏ đến "phiếu yêu cầu" (PVC)
+</code></pre>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- SECTION: So sánh nhanh -->
+            <section id="page-comparisons" class="page-content space-y-8">
+                <header class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-4xl font-bold text-gray-900">🔄 So sánh nhanh</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        Các bảng so sánh này giúp bạn phân biệt rõ ràng các khái niệm dễ nhầm lẫn, tất cả ở cùng một nơi.
+                    </p>
+                </header>
+
+                <!-- Comparison Table 1 -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <h3 class="text-2xl font-semibold p-6">Pod vs ReplicaSet vs Deployment</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-100">
+                                <tr class="border-b border-gray-200">
+                                    <th class="p-4 font-semibold">Tính năng</th>
+                                    <th class="p-4 font-semibold">Pod</th>
+                                    <th class="p-4 font-semibold">ReplicaSet (RS)</th>
+                                    <th class="p-4 font-semibold">Deployment (Deploy)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="p-4 font-medium">Mục đích</td>
+                                    <td class="p-4">Đơn vị chạy (bọc container)</td>
+                                    <td class="p-4">Đảm bảo số lượng (replicas)</td>
+                                    <td class="p-4">Quản lý vòng đời, cập nhật (versioning)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Tự phục hồi?</td>
+                                    <td class="p-4 text-red-600 font-semibold">Không. Nếu chết là chết.</td>
+                                    <td class="p-4 text-green-600 font-semibold">Có. Tạo Pod mới nếu thiếu.</td>
+                                    <td class="p-4 text-green-600 font-semibold">Có (thông qua RS).</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Cập nhật?</td>
+                                    <td class="p-4 text-red-600 font-semibold">Không</td>
+                                    <td class="p-4 text-red-600 font-semibold">Không (phải tạo RS mới)</td>
+                                    <td class="p-4 text-green-600 font-semibold">Có (Rolling Update)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Khi nào dùng?</td>
+                                    <td class="p-4">Không bao giờ tạo trực tiếp (trừ khi debug).</td>
+                                    <td class="p-4">Không bao giờ tạo trực tiếp.</td>
+                                    <td class="p-4 font-bold">Luôn luôn dùng cái này.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Comparison Table 2 -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <h3 class="text-2xl font-semibold p-6">Service vs Ingress</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-100">
+                                <tr class="border-b border-gray-200">
+                                    <th class="p-4 font-semibold">Tính năng</th>
+                                    <th class="p-4 font-semibold">Service (svc)</th>
+                                    <th class="p-4 font-semibold">Ingress</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="p-4 font-medium">Mục đích</td>
+                                    <td class="p-4"><strong>Kết nối nội bộ</strong> (service-to-service) và cân bằng tải.</td>
+                                    <td class="p-4"><strong>Kết nối bên ngoài</strong> (user-to-service) và định tuyến HTTP.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Layer (OSI)</td>
+                                    <td class="p-4">Layer 4 (TCP/UDP). (Không hiểu HTTP)</td>
+                                    <td class="p-4">Layer 7 (HTTP/HTTPS). (Hiểu paths, domains)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Giống đời thực</td>
+                                    <td class="p-4"><strong>Tổng đài nội bộ</strong>. Gọi "Lễ tân" (tên Service), nó tự kết nối 1 trong 3 lễ tân (Pods).</td>
+                                    <td class="p-4"><strong>Bảo vệ cổng chính</strong>. Quyết định `domain/api` -> Tòa nhà Backend.</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Khi nào dùng?</td>
+                                    <td class="p-4 font-bold">Luôn luôn. (Backend gọi DB, Frontend gọi Backend).</td>
+                                    <td class="p-4 font-bold">Khi cần expose app ra Internet qua tên miền.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Comparison Table 3 -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <h3 class="text-2xl font-semibold p-6">ConfigMap vs Secret</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-gray-100">
+                                <tr class="border-b border-gray-200">
+                                    <th class="p-4 font-semibold">Tính năng</th>
+                                    <th class="p-4 font-semibold">ConfigMap</th>
+                                    <th class="p-4 font-semibold">Secret</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                <tr>
+                                    <td class="p-4 font-medium">Mục đích</td>
+                                    <td class="p-4">Cấu hình <strong>không nhạy cảm</strong></td>
+                                    <td class="p-4">Cấu hình <strong>nhạy cảm</strong></td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Lưu trữ</td>
+                                    <td class="p-4">Plain text (văn bản thuần túy)</td>
+                                    <td class="p-4">Base64 encoded (chỉ che mắt, không mã hóa)</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-4 font-medium">Ví dụ</td>
+                                    <td class="p-4">`DB_HOST=postgres.default.svc`</td>
+                                    <td class="p-4">`DB_PASSWORD=...` `JWT_SECRET=...`</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Thực hành: Chuyển đổi -->
+            <section id="page-practice" class="page-content space-y-8">
+                <header class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-4xl font-bold text-gray-900">🚀 Thực hành: Chuyển Docker Compose sang K8s</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        Đây là mục tiêu chính của bạn. Chúng ta sẽ chuyển đổi file `docker-compose.yaml` (bên trái) thành một bộ 7 file manifest của Kubernetes (bên phải).
+                        Hãy nhấp qua lại giữa các tab để so sánh, và nhấp vào các file YAML bên tab Kubernetes để xem chi tiết.
+                    </p>
+                </header>
+
+                <div class="flex flex-col lg:flex-row gap-6">
+
+                    <!-- Docker Compose Side -->
+                    <div class="lg:w-1/2">
+                        <div class="bg-white rounded-lg shadow sticky top-20">
+                            <div class="p-4 border-b border-gray-200">
+                                <h3 class="text-xl font-semibold text-gray-800">File Nguồn: `docker-compose.yaml`</h3>
+                            </div>
+                            <div class="p-4">
+                                <pre><code class="language-yaml">version: '3.8'
+services:
+  backend-api:
+    image: my-company/backend:v1.5
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=postgres-db
+      - DB_USER=admin
+      - DB_PASS=supersecret
+      - REDIS_HOST=redis-cache
+    depends_on:
+      - postgres-db
+      - redis-cache
+
+  frontend-web:
+    image: my-company/frontend:v1.1
+    build: ./frontend
+    ports:
+      - "80:80"
+    environment:
+      - API_URL=http://localhost:8000/api
+
+  postgres-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=supersecret
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis-cache:
+    image: redis:7
+    
+volumes:
+  postgres_data:
+</code></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kubernetes Side -->
+                    <div class="lg:w-1/2">
+                        <div class="bg-white rounded-lg shadow">
+                            <div class="p-4 border-b border-gray-200">
+                                <h3 class="text-xl font-semibold text-blue-600">File Đích: Kubernetes Manifests</h3>
+                            </div>
+                            
+                            <!-- K8s File Tabs -->
+                            <div class="border-b border-gray-200 px-4">
+                                <nav class="flex flex-wrap -mb-px gap-x-4" id="k8s-files-tabs">
+                                    <button class="tab-btn active text-sm" data-tab="k8s-file-01">01: DB Secret/PVC</button>
+                                    <button class="tab-btn text-sm" data-tab="k8s-file-02">02: DB Deploy</button>
+                                    <button class="tab-btn text-sm" data-tab="k8s-file-03">03: Redis Deploy</button>
+                                    <button class="tab-btn text-sm" data-tab="k8s-file-04">04: Backend Deploy</button>
+                                    <button class="tab-btn text-sm" data-tab="k8s-file-05">05: Frontend Deploy</button>
+                                    <button class="tab-btn text-sm" data-tab="k8s-file-06">06: Ingress/Services</button>
+                                </nav>
+                            </div>
+
+                            <!-- K8s File Content -->
+                            <div class="p-4 space-y-4">
+                                <div id="k8s-file-01" class="tab-content active">
+                                    <h4 class="font-semibold text-lg">01-db-pvc-secret.yaml</h4>
+                                    <p class="text-sm text-gray-600">Mã hóa `POSTGRES_USER` và `POSTGRES_PASSWORD` vào Secret. Yêu cầu (Claim) 2GB lưu trữ cho DB.</p>
+                                    <pre><code class="language-yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+type: Opaque
+data:
+  # echo -n 'admin' | base64 -> YWRtaW4=
+  # echo -n 'supersecret' | base64 -> c3VwZXJzZWNyZXQ=
+  POSTGRES_USER: YWRtaW4=
+  POSTGRES_PASSWORD: c3VwZXJzZWNyZXQ=
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+</code></pre>
+                                </div>
+                                <div id="k8s-file-02" class="tab-content">
+                                    <h4 class="font-semibold text-lg">02-db-deployment-service.yaml</h4>
+                                    <p class="text-sm text-gray-600">Tạo Service `postgres-service` (để backend gọi) và Deployment cho Postgres, sử dụng Secret và PVC đã tạo.</p>
+                                    <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  type: ClusterIP
+  selector: {app: postgres}
+  ports:
+  - port: 5432
+    targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: postgres}
+  template:
+    metadata:
+      labels: {app: postgres}
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15
+        envFrom:
+          - secretRef:
+              name: postgres-secret
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgres-pvc
+</code></pre>
+                                </div>
+                                <div id="k8s-file-03" class="tab-content">
+                                    <h4 class="font-semibold text-lg">03-redis-deployment-service.yaml</h4>
+                                    <p class="text-sm text-gray-600">Tạo Service `redis-service` và Deployment cho Redis (Stateful nhưng không cần lưu trữ bền vững ở ví dụ này).</p>
+                                    <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+spec:
+  type: ClusterIP
+  selector: {app: redis}
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: redis}
+  template:
+    metadata:
+      labels: {app: redis}
+    spec:
+      containers:
+      - name: redis
+        image: redis:7
+        ports:
+        - containerPort: 6379
+</code></pre>
+                                </div>
+                                <div id="k8s-file-04" class="tab-content">
+                                    <h4 class="font-semibold text-lg">04-backend-configmap-deployment.yaml</h4>
+                                    <p class="text-sm text-gray-600">Tạo ConfigMap cho `DB_HOST` (trỏ đến tên Service K8s) và Deployment cho Backend, scale lên 3 replicas.</p>
+                                    <pre><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DB_HOST: "postgres-service.default.svc.cluster.local"
+  REDIS_HOST: "redis-service.default.svc.cluster.local"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels: {app: backend}
+  template:
+    metadata:
+      labels: {app: backend}
+    spec:
+      containers:
+      - name: backend
+        image: my-company/backend:v1.5
+        ports:
+        - containerPort: 8000
+        envFrom:
+          - configMapRef:
+              name: backend-config
+        env:
+          - name: DB_USER
+            valueFrom: {secretKeyRef: {name: postgres-secret, key: POSTGRES_USER}}
+          - name: DB_PASS
+            valueFrom: {secretKeyRef: {name: postgres-secret, key: POSTGRES_PASSWORD}}
+</code></pre>
+                                </div>
+                                <div id="k8s-file-05" class="tab-content">
+                                    <h4 class="font-semibold text-lg">05-frontend-configmap-deployment.yaml</h4>
+                                    <p class="text-sm text-gray-600">Tạo ConfigMap cho `API_URL` (trỏ đến path của Ingress) và Deployment cho Frontend.</p>
+                                    <pre><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data:
+  API_URL: "/api"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: frontend}
+  template:
+    metadata:
+      labels: {app: frontend}
+    spec:
+      containers:
+      - name: frontend
+        image: my-company/frontend:v1.1
+        ports:
+        - containerPort: 80
+        envFrom:
+          - configMapRef:
+              name: frontend-config
+</code></pre>
+                                </div>
+                                <div id="k8s-file-06" class="tab-content">
+                                    <h4 class="font-semibold text-lg">06-ingress.yaml</h4>
+                                    <p class="text-sm text-gray-600">Tạo các Service (ClusterIP) cho frontend/backend và một Ingress để định tuyến traffic từ bên ngoài.</p>
+                                    <pre><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata: {name: backend-service}
+spec:
+  type: ClusterIP
+  selector: {app: backend}
+  ports: [{port: 80, targetPort: 8000}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: frontend-service}
+spec:
+  type: ClusterIP
+  selector: {app: frontend}
+  ports: [{port: 80, targetPort: 80}]
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: main-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /api(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service: {name: backend-service, port: {number: 80}}
+      - path: /(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service: {name: frontend-service, port: {number: 80}}
+</code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION: Nâng cao -->
+            <section id="page-advanced" class="page-content space-y-8">
+                <header class="bg-white p-6 rounded-lg shadow">
+                    <h2 class="text-4xl font-bold text-gray-900">📈 Khám phá Nâng cao</h2>
+                    <p class="mt-4 text-lg text-gray-600">
+                        Khi bạn đã nắm vững cơ bản, đây là các công cụ và khái niệm để vận hành hệ thống ở quy mô production.
+                    </p>
+                </header>
+
+                <!-- Advanced Tabs Navigation -->
+                <div class="bg-white rounded-lg shadow p-2 flex flex-wrap gap-2" id="advanced-tabs">
+                    <button class="tab-btn active" data-tab="advanced-hpa">Autoscaling (HPA)</button>
+                    <button class="tab-btn" data-tab="advanced-cicd">CI/CD Pipeline</button>
+                    <button class="tab-btn" data-tab="advanced-helm">Helm & Kustomize</button>
+                    <button class="tab-btn" data-tab="advanced-monitoring">Monitoring</button>
+                    <button class="tab-btn" data-tab="advanced-eks">AWS EKS</button>
+                </div>
+
+                <!-- Tab Content: HPA -->
+                <div id="advanced-hpa" class="tab-content active space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Tự động Co giãn (Horizontal Pod Autoscaler - HPA)</h3>
+                        <div class="analogy-box">
+                            <strong>Giống như siêu thị:</strong> Bạn đặt quy tắc (HPA): "Nếu khách chờ thanh toán (CPU utilization) ở bất kỳ quầy nào (Pod) vượt quá 70%, hãy *tự động mở thêm quầy mới* (tăng `replicas`), tối đa 10 quầy. Nếu khách giảm, hãy đóng bớt quầy."
+                        </div>
+                        <p class="mb-4">Điều này giúp bạn tiết kiệm chi phí khi tải thấp và đảm bảo hiệu năng khi tải cao.</p>
+
+                        <h4 class="text-xl font-medium mt-6">Mô phỏng HPA</h4>
+                        <p class="mb-4 text-gray-600">Bấm nút bên dưới để mô phỏng lượng CPU tăng vọt và xem HPA phản ứng bằng cách tăng số lượng Pod (sau một khoảng trễ).</p>
+                        
+                        <div class="chart-container">
+                            <canvas id="hpaChart"></canvas>
+                        </div>
+                        <div class="text-center mt-4">
+                            <button id="simulate-hpa-btn" class="bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-blue-700 transition">
+                                Mô phỏng Tải cao
+                            </button>
+                            <button id="reset-hpa-btn" class="bg-gray-500 text-white font-semibold py-2 px-6 rounded-lg shadow hover:bg-gray-600 transition ml-2">
+                                Reset
+                            </button>
+                        </div>
+                        <pre class="mt-6"><code class="language-bash"># (Chỉ làm 1 lần) Bật Metrics Server trên Minikube
+minikube addons enable metrics-server
+
+# Tạo HPA bằng CLI (scale từ 2-10 pod, mục tiêu CPU 50%)
+kubectl autoscale deployment backend-api -n my-project --cpu-percent=50 --min=2 --max=10
+
+# Xem HPA
+kubectl get hpa -n my-project -w
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Tab Content: CI/CD -->
+                <div id="advanced-cicd" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">CI/CD Pipeline (Workflow thực tế)</h3>
+                        <p class="mb-6 text-gray-600">Tự động hóa quy trình từ `git push` đến deploy. Đây là workflow DevOps hoàn chỉnh:</p>
+
+                        <!-- HTML/CSS Stepper Diagram -->
+                        <div class="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-4 overflow-x-auto p-4">
+                            
+                            <div class="flex flex-col items-center text-center w-48">
+                                <div class="w-16 h-16 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold shadow-lg">1</div>
+                                <h5 class="font-semibold mt-2">Dev Git Push</h5>
+                                <p class="text-sm text-gray-500">Push code lên `main`</p>
+                            </div>
+
+                            <div class="border-t-4 md:border-t-0 md:border-l-4 border-dashed border-gray-300 h-10 w-1 md:h-1 md:w-full"></div>
+                            
+                            <div class="flex flex-col items-center text-center w-48">
+                                <div class="w-16 h-16 rounded-full bg-gray-700 text-white flex items-center justify-center text-2xl font-bold shadow-lg">2</div>
+                                <h5 class="font-semibold mt-2">CI Server</h5>
+                                <p class="text-sm text-gray-500">(GitHub Actions, Jenkins...)</p>
+                            </div>
+
+                            <div class="border-t-4 md:border-t-0 md:border-l-4 border-dashed border-gray-300 h-10 w-1 md:h-1 md:w-full"></div>
+
+                            <div class="flex flex-col items-center text-center w-48">
+                                <div class="w-16 h-16 rounded-full bg-gray-700 text-white flex items-center justify-center text-2xl font-bold shadow-lg">3</div>
+                                <h5 class="font-semibold mt-2">Build & Push Image</h5>
+                                <p class="text-sm text-gray-500">Build image Docker và push lên Registry (ECR, Docker Hub)</p>
+                            </div>
+
+                            <div class="border-t-4 md:border-t-0 md:border-l-4 border-dashed border-gray-300 h-10 w-1 md:h-1 md:w-full"></div>
+
+                            <div class="flex flex-col items-center text-center w-48">
+                                <div class="w-16 h-16 rounded-full bg-green-600 text-white flex items-center justify-center text-2xl font-bold shadow-lg">4</div>
+                                <h5 class="font-semibold mt-2">Deploy (GitOps)</h5>
+                                <p class="text-sm text-gray-500">ArgoCD/Jenkins cập nhật K8s cluster</p>
+                            </div>
+                        </div>
+
+                        <h4 class="text-xl font-medium mt-8">Ví dụ: GitHub Actions Pipeline</h4>
+                        <p class="mb-2 text-gray-600">File `.github/workflows/deploy.yml` này sẽ tự động build và deploy khi push lên `main`.</p>
+                        <pre><code class="language-yaml">name: Build and Deploy to K8s
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOKCER_USER }}
+          password: ${{ secrets.DOKCER_PASS }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: my-company/my-backend:${{ github.sha }}
+      
+      - name: Set up Kubeconfig
+        run: echo "${{ secrets.KUBE_CONFIG }}" > $HOME/.kube/config
+      
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/backend-api \
+            -n my-project \
+            backend=my-company/my-backend:${{ github.sha }}
+</code></pre>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Helm & Kustomize -->
+                <div id="advanced-helm" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Quản lý Template (Helm & Kustomize)</h3>
+                        <p class="mt-2 text-gray-600">Bạn có 7 file YAML. Làm sao để triển khai 1 môi trường `staging` giống hệt (chỉ khác DB pass, replicas)?</p>
+                        <ul class="list-disc list-inside mt-4 space-y-2">
+                            <li><strong>Helm (Giống như `dnf` hay `apt`):</strong> Đóng gói (package) toàn bộ 7 file YAML của bạn thành 1 `Chart`. Bạn có thể cài đặt cả một hệ thống phức tạp (như Prometheus) bằng 1 lệnh `helm install`. Tốt nhất để *phân phối* và *cài đặt* phần mềm của bên thứ 3.</li>
+                            <li><strong>Kustomize (Quản lý Overlay):</strong> Bạn giữ 1 bộ YAML *cơ sở* (base). Sau đó tạo các file *overlay* (ví dụ `staging`, `prod`) chỉ định *sự khác biệt* (ví dụ: `prod` sẽ patch `replicas: 10`). Tốt nhất để quản lý các môi trường (dev/staging/prod) cho *chính* ứng dụng của bạn.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Monitoring -->
+                <div id="advanced-monitoring" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Monitoring & Logging</h3>
+                        <p class="mt-2 text-gray-600">Làm sao biết app đang lỗi, đang chậm?</p>
+                        <ul class="list-disc list-inside mt-4 space-y-2">
+                            <li><strong>Logging (EFK/Loki):</strong> `kubectl logs` chỉ xem được log của 1 Pod, Pod chết log mất. Giải pháp là dùng một tool (như `Fluentd`) tự động *gom* log từ *tất cả* các Pod và gửi về một nơi lưu trữ trung tâm (như `Elasticsearch` hoặc `Loki`).</li>
+                            <li><strong>Monitoring (Prometheus & Grafana):</strong>
+                                <ul class="list-disc list-inside ml-6 space-y-1">
+                                    <li><strong>Prometheus:</strong> "Kẻ săn lùng" metrics. Nó đi hỏi (scrape) tất cả các Pod/Node "CPU mày bao nhiêu?", "Bao nhiêu request/giây?"... và lưu lại.</li>
+                                    <li><strong>Grafana:</strong> "Họa sĩ". Đọc dữ liệu từ Prometheus và vẽ thành các dashboard (biểu đồ) đẹp đẽ.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <pre class="mt-4"><code class="language-bash"># Cài đặt dashboard, prometheus, grafana trên Minikube
+minikube addons enable dashboard
+minikube addons enable prometheus
+</code></pre>
+                    </div>
+                </div>
+                
+                <!-- Tab Content: EKS -->
+                <div id="advanced-eks" class="tab-content space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h3 class="text-2xl font-semibold">Triển khai trên Cloud (AWS EKS)</h3>
+                        <div class="analogy-box">
+                            Minikube/Kind là "xe tập lái". EKS/GKE/AKS là "xe đua F1".
+                        </div>
+                        <p class="mt-2 text-gray-600"><strong>Amazon EKS (Elastic Kubernetes Service)</strong> là dịch vụ K8s của AWS.</p>
+                        <h4 class="text-lg font-medium mt-4">Khác biệt chính:</h4>
+                        <ul class="list-disc list-inside mt-2 space-y-2">
+                            <li><strong>Control Plane (Bộ não):</strong> AWS quản lý *hoàn toàn*. Bạn không cần lo về etcd hay API Server.</li>
+                            <li><strong>Worker Nodes:</strong> Là các máy ảo `EC2` trong tài khoản của bạn.</li>
+                            <li><strong>Tích hợp Cloud (Điều tuyệt vời):</strong>
+                                <ul class="list-disc list-inside ml-6 space-y-1">
+                                    <li>Bạn tạo Service `type: LoadBalancer` → EKS *tự động* tạo một `AWS Elastic Load Balancer` (ELB).</li>
+                                    <li>Bạn tạo `PVC` → EKS *tự động* tạo một ổ `AWS EBS`.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                         <pre class="mt-4"><code class="language-bash"># Cài đặt 'eksctl' và 'aws-cli' (không nằm trong hướng dẫn này)
+
+# Lệnh này tự động tạo TOÀN BỘ cluster production-ready trên AWS
+eksctl create cluster \
+  --name my-prod-cluster \
+  --region us-east-1 \
+  --node-type t3.medium \
+  --nodes 3
+
+# Sau 15 phút, bạn có thể chạy 'kubectl apply -f ...' y hệt như trên Minikube!
+</code></pre>
+                    </div>
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        const state = {
+            currentPage: 'home',
+            currentConceptTab: 'concepts-main',
+            currentK8sFileTab: 'k8s-file-01',
+            currentAdvancedTab: 'advanced-hpa',
+        };
+
+        const navLinks = document.querySelectorAll('#main-nav a');
+        const pageContents = document.querySelectorAll('.page-content');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.getElementById('sidebar');
+
+        // --- Navigation ---
+        function setActive(links, element, activeClass) {
+            links.forEach(link => link.classList.remove(activeClass));
+            element.classList.add(activeClass);
+        }
+
+        function renderPage() {
+            pageContents.forEach(page => {
+                if (page.id === `page-${state.currentPage}`) {
+                    page.classList.add('active');
+                } else {
+                    page.classList.remove('active');
+                }
+            });
+            window.scrollTo(0, 0);
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const page = link.getAttribute('data-page');
+                state.currentPage = page;
+                setActive(navLinks, link, 'active');
+                renderPage();
+                
+                // Close mobile menu on click
+                if (window.innerWidth < 768) {
+                    sidebar.classList.add('hidden');
+                }
+            });
+        });
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('hidden');
+        });
+
+        // --- Tab Logic ---
+        function initTabs(tabContainerId, contentPrefix) {
+            const tabContainer = document.getElementById(tabContainerId);
+            if (!tabContainer) return;
+            
+            const tabBtns = tabContainer.querySelectorAll('.tab-btn');
+            
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const tabId = btn.getAttribute('data-tab');
+                    
+                    // Update state
+                    if (tabContainerId === 'concepts-tabs') state.currentConceptTab = tabId;
+                    else if (tabContainerId === 'k8s-files-tabs') state.currentK8sFileTab = tabId;
+                    else if (tabContainerId === 'advanced-tabs') state.currentAdvancedTab = tabId;
+
+                    setActive(tabBtns, btn, 'active');
+                    
+                    // Hide all content in this group
+                    const contents = document.querySelectorAll(`.tab-content[id^="${contentPrefix}"]`);
+                    contents.forEach(content => content.classList.remove('active'));
+                    
+                    // Show active content
+                    const activeContent = document.getElementById(tabId);
+                    if (activeContent) activeContent.classList.add('active');
+                });
+            });
+        }
+
+        initTabs('concepts-tabs', 'concepts-');
+        initTabs('k8s-files-tabs', 'k8s-file-');
+        initTabs('advanced-tabs', 'advanced-');
+
+        // --- Copy to Clipboard ---
+        document.querySelectorAll('pre').forEach(pre => {
+            const code = pre.querySelector('code');
+            if (code) {
+                const btn = document.createElement('button');
+                btn.innerText = 'Copy';
+                btn.className = 'copy-btn';
+                
+                btn.addEventListener('click', () => {
+                    const text = code.innerText;
+                    const el = document.createElement('textarea');
+                    el.value = text;
+                    document.body.appendChild(el);
+                    el.select();
+                    try {
+                        document.execCommand('copy');
+                        btn.innerText = 'Copied!';
+                    } catch (err) {
+                        btn.innerText = 'Error';
+                    }
+                    document.body.removeChild(el);
+                    setTimeout(() => { btn.innerText = 'Copy'; }, 2000);
+                });
+                
+                pre.appendChild(btn);
+            }
+        });
+
+        // --- HPA Chart Logic ---
+        let hpaChartInstance = null;
+        const hpaChartLabels = ['T-0', 'T-10s', 'T-20s', 'T-30s', 'T-40s', 'T-50s'];
+        const initialCpuData = [15, 20, 18, 22, 25, 19];
+        const initialPodData = [2, 2, 2, 2, 2, 2];
+
+        function createHpaChart() {
+            const ctx = document.getElementById('hpaChart');
+            if (!ctx) return;
+            
+            if (hpaChartInstance) {
+                hpaChartInstance.destroy();
+            }
+
+            hpaChartInstance = new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: hpaChartLabels,
+                    datasets: [
+                        {
+                            label: 'CPU Utilization (%)',
+                            data: [...initialCpuData],
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            yAxisID: 'y-cpu',
+                            type: 'line',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Số lượng Pods',
+                            data: [...initialPodData],
+                            backgroundColor: 'rgba(22, 163, 74, 0.6)',
+                            borderColor: 'rgba(22, 163, 74, 1)',
+                            borderWidth: 2,
+                            yAxisID: 'y-pods',
+                            stepped: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        'y-cpu': {
+                            type: 'linear',
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'CPU (%)'
+                            },
+                            min: 0,
+                            max: 100
+                        },
+                        'y-pods': {
+                            type: 'linear',
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Số Pods'
+                            },
+                            min: 0,
+                            max: 12,
+                            ticks: {
+                                stepSize: 1
+                            },
+                            grid: {
+                                drawOnChartArea: false, 
+                            },
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y;
+                                        if (context.dataset.yAxisID === 'y-cpu') {
+                                            label += '%';
+                                        }
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        createHpaChart();
+        
+        const simulateBtn = document.getElementById('simulate-hpa-btn');
+        const resetBtn = document.getElementById('reset-hpa-btn');
+
+        if (simulateBtn) {
+            simulateBtn.addEventListener('click', () => {
+                if (!hpaChartInstance) return;
+                
+                // Simulate CPU spike
+                hpaChartInstance.data.datasets[0].data = [15, 20, 85, 90, 88, 82];
+                hpaChartInstance.update('none'); 
+                
+                // Simulate HPA reaction (scale up) after a delay
+                setTimeout(() => {
+                    hpaChartInstance.data.datasets[1].data = [2, 2, 2, 4, 6, 8];
+                    hpaChartInstance.update();
+                }, 1500); 
+            });
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => {
+                if (!hpaChartInstance) return;
+                hpaChartInstance.data.datasets[0].data = [...initialCpuData];
+                hpaChartInstance.data.datasets[1].data = [...initialPodData];
+                hpaChartInstance.update();
+            });
+        }
+
+        // --- Initial Render ---
+        renderPage();
+
+    });
+</script>
+
+</body>
+</html>
